@@ -13,4 +13,5 @@
 <a href="https://dreamstudio.com/desktop/">LibreOffice, Blender, Gimp</a>
 <a href="https://florafauna.ai">FloraFauna Storyboards</a>
 <a href="https://www.brahma.io">Brahma Digital Humans</a><!-- Redirect from metaphysic.ai -->
+<!-- #Kubernetes with #Forgejo for Github #SelfHosted locally -->
 <br>
