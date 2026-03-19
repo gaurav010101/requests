@@ -105,12 +105,11 @@ class ArtsEngine {
     document.querySelectorAll('.ae-ratio-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.ratio === this.prefs.ratio);
     });
-    document.querySelectorAll('.ae-type-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.type === this.prefs.outputType);
-    });
-    // providerSelect and modelSelect are managed by initProviderSelector()
+
     const varInput = document.getElementById('variationsInput');
     if (varInput) varInput.value = this.prefs.variations;
+
+    this.syncOutputButtons();
   }
 
   // -------------------------------------------------------------------------
@@ -165,18 +164,28 @@ class ArtsEngine {
     const updateOutputTypeUI = (type) => {
       const label = document.getElementById('generateBtnLabel');
       const input = document.getElementById('promptInput');
-      const typeLabels = { image: 'Image', text: 'Text', video: 'Video' };
+      const typeLabels = { image: 'Image', text: 'Text', video: 'Video', '3d': '3D' };
       const typeLabel = typeLabels[type] || 'Image';
+
       if (label) {
-        const btnLabels = { image: 'Create Image', text: 'Create Text', video: 'Create Video' };
+        const btnLabels = {
+          image: 'Create Image',
+          text: 'Create Text',
+          video: 'Create Video',
+          '3d': 'Create 3D'
+        };
         label.textContent = btnLabels[type] || 'Generate';
       }
-      if (input) input.placeholder = `Enter a prompt for your ${typeLabel.toLowerCase()}… (Ctrl+Enter to generate)`;
+
+      if (input) {
+        input.placeholder = `Enter a prompt for your ${typeLabel.toLowerCase()}… (Ctrl+Enter to generate)`;
+      }
     };
 
     document.querySelectorAll('.ae-type-btn').forEach(btn => {
-      if (btn.classList.contains('disabled')) return;
       btn.addEventListener('click', () => {
+        if (btn.classList.contains('disabled') || btn.disabled || btn.style.display === 'none') return;
+
         document.querySelectorAll('.ae-type-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.prefs.outputType = btn.dataset.type;
@@ -185,12 +194,14 @@ class ArtsEngine {
         updateOutputTypeUI(this.prefs.outputType);
       });
     });
+
     updateOutputTypeUI(this.prefs.outputType);
 
     // Model selector — save per-provider so each provider remembers its last model
     document.getElementById('modelSelect')?.addEventListener('change', e => {
       this.prefs.model = e.target.value;
       this.savePref('model_' + (this.prefs.provider || 'gemini'), e.target.value);
+      this.syncOutputButtons();
     });
 
     // Variations input (clamp 1–4)
@@ -667,55 +678,55 @@ class ArtsEngine {
   static get PROVIDER_MODELS() {
     return {
       claude: [
-        { value: 'claude-opus-4-6',           label: 'Claude Opus 4.6' },
-        { value: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6' },
-        { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+        { value: 'claude-opus-4-6',           label: 'Claude Opus 4.6', outputs: ['text'] },
+        { value: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6', outputs: ['text'] },
+        { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', outputs: ['text'] },
       ],
       gemini: [
-        { value: 'gemini-1.5-flash',              label: 'Gemini 1.5 Flash' },
-        { value: 'gemini-1.5-pro',                label: 'Gemini 1.5 Pro' },
-        { value: 'gemini-2.0-flash',              label: 'Gemini 2.0 Flash' },
-        { value: 'gemini-2.0-flash-thinking-exp', label: 'Gemini 2.0 Flash Thinking' },
+        { value: 'gemini-1.5-flash',              label: 'Gemini 1.5 Flash', outputs: ['text'] },
+        { value: 'gemini-1.5-pro',                label: 'Gemini 1.5 Pro', outputs: ['text'] },
+        { value: 'gemini-2.0-flash',              label: 'Gemini 2.0 Flash', outputs: ['text', 'image'] },
+        { value: 'gemini-2.0-flash-thinking-exp', label: 'Gemini 2.0 Flash Thinking', outputs: ['text'] },
       ],
       openai: [
-        { value: 'gpt-4o',      label: 'GPT-4o' },
-        { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
-        { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+        { value: 'gpt-4o',      label: 'GPT-4o', outputs: ['text', 'image'] },
+        { value: 'gpt-4o-mini', label: 'GPT-4o mini', outputs: ['text'] },
+        { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', outputs: ['text'] },
       ],
       xai: [
-        { value: 'grok-3-mini-beta', label: 'Grok 3 Mini' },
-        { value: 'grok-3',           label: 'Grok 3' },
-        { value: 'grok-2-1212',      label: 'Grok 2' },
+        { value: 'grok-3-mini-beta', label: 'Grok 3 Mini', outputs: ['text'] },
+        { value: 'grok-3',           label: 'Grok 3', outputs: ['text'] },
+        { value: 'grok-2-1212',      label: 'Grok 2', outputs: ['text'] },
       ],
       groq: [
-        { value: 'llama-3.3-70b-versatile',  label: 'Llama 3.3 70B' },
-        { value: 'llama-3.1-8b-instant',     label: 'Llama 3.1 8B' },
-        { value: 'mixtral-8x7b-32768',       label: 'Mixtral 8x7B' },
+        { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', outputs: ['text'] },
+        { value: 'llama-3.1-8b-instant',    label: 'Llama 3.1 8B', outputs: ['text'] },
+        { value: 'mixtral-8x7b-32768',      label: 'Mixtral 8x7B', outputs: ['text'] },
       ],
       together: [
-        { value: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',     label: 'Llama 3.3 70B Turbo' },
-        { value: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo', label: 'Llama 3.1 8B Turbo' },
+        { value: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',     label: 'Llama 3.3 70B Turbo', outputs: ['text'] },
+        { value: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo', label: 'Llama 3.1 8B Turbo', outputs: ['text'] },
       ],
       fireworks: [
-        { value: 'accounts/fireworks/models/llama-v3p3-70b-instruct', label: 'Llama 3.3 70B' },
-        { value: 'accounts/fireworks/models/qwen2p5-72b-instruct',    label: 'Qwen 2.5 72B' },
+        { value: 'accounts/fireworks/models/llama-v3p3-70b-instruct', label: 'Llama 3.3 70B', outputs: ['text'] },
+        { value: 'accounts/fireworks/models/qwen2p5-72b-instruct',    label: 'Qwen 2.5 72B', outputs: ['text'] },
       ],
       mistral: [
-        { value: 'mistral-large-latest', label: 'Mistral Large' },
-        { value: 'mistral-small-latest', label: 'Mistral Small' },
-        { value: 'codestral-latest',     label: 'Codestral' },
+        { value: 'mistral-large-latest', label: 'Mistral Large', outputs: ['text'] },
+        { value: 'mistral-small-latest', label: 'Mistral Small', outputs: ['text'] },
+        { value: 'codestral-latest',     label: 'Codestral', outputs: ['text'] },
       ],
       perplexity: [
-        { value: 'llama-3.1-sonar-large-128k-online', label: 'Sonar Large (online)' },
-        { value: 'llama-3.1-sonar-small-128k-online', label: 'Sonar Small (online)' },
+        { value: 'llama-3.1-sonar-large-128k-online', label: 'Sonar Large (online)', outputs: ['text'] },
+        { value: 'llama-3.1-sonar-small-128k-online', label: 'Sonar Small (online)', outputs: ['text'] },
       ],
       deepseek: [
-        { value: 'deepseek-chat',     label: 'DeepSeek Chat' },
-        { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
+        { value: 'deepseek-chat',     label: 'DeepSeek Chat', outputs: ['text'] },
+        { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner', outputs: ['text'] },
       ],
       env: [
-        { value: 'grok-3-mini-beta', label: 'Grok 3 Mini (default)' },
-        { value: 'grok-3',           label: 'Grok 3' },
+        { value: 'grok-3-mini-beta', label: 'Grok 3 Mini (default)', outputs: ['text'] },
+        { value: 'grok-3',           label: 'Grok 3', outputs: ['text'] },
       ],
     };
   }
@@ -786,12 +797,70 @@ class ArtsEngine {
     const models = ArtsEngine.PROVIDER_MODELS[providerId] || ArtsEngine.PROVIDER_MODELS.env;
     const modelSel = document.getElementById('modelSelect');
     if (!modelSel) return;
+
     modelSel.innerHTML = models.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
-    // Restore per-provider saved model
+
     const saved = this.loadPref('model_' + providerId, models[0].value);
     modelSel.value = [...modelSel.options].find(o => o.value === saved) ? saved : models[0].value;
     this.prefs.model = modelSel.value;
+
+    this.syncOutputButtons();
   }
+
+  getCurrentModelConfig() {
+    const providerId = this.prefs.provider || 'gemini';
+    const models = ArtsEngine.PROVIDER_MODELS[providerId] || ArtsEngine.PROVIDER_MODELS.env;
+    return models.find(m => m.value === this.prefs.model) || models[0] || null;
+  }
+
+  syncOutputButtons() {
+    const modelCfg = this.getCurrentModelConfig();
+    const supported = modelCfg?.outputs || ['image', 'text', 'video'];
+
+    document.querySelectorAll('.ae-type-btn').forEach(btn => {
+      const type = btn.dataset.type;
+      const enabled = supported.includes(type);
+
+      if (type === '3d' || type === 'video') {
+        btn.style.display = enabled ? '' : 'none';
+      } else {
+        btn.style.display = '';
+      }
+
+      btn.disabled = !enabled;
+      btn.classList.toggle('disabled', !enabled);
+
+      if (!enabled) btn.classList.remove('active');
+    });
+
+    if (!supported.includes(this.prefs.outputType)) {
+      this.prefs.outputType = supported.includes('image') ? 'image' : (supported[0] || 'text');
+      this.savePref('outputType', this.prefs.outputType);
+    }
+
+    document.querySelectorAll('.ae-type-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.type === this.prefs.outputType);
+    });
+
+    const label = document.getElementById('generateBtnLabel');
+    const input = document.getElementById('promptInput');
+    const btnLabels = {
+      image: 'Create Image',
+      text: 'Create Text',
+      video: 'Create Video',
+      '3d': 'Create 3D'
+    };
+    const typeLabels = {
+      image: 'image',
+      text: 'text',
+      video: 'video',
+      '3d': '3D'
+    };
+
+    if (label) label.textContent = btnLabels[this.prefs.outputType] || 'Generate';
+    if (input) input.placeholder = `Enter a prompt for your ${typeLabels[this.prefs.outputType] || 'content'}… (Ctrl+Enter to generate)`;
+  }
+
 
   getActiveProvider() {
     const KEY_NAMES = {
@@ -868,6 +937,8 @@ class ArtsEngine {
             : 'Submitting video');
           await this.generateVideo(scene, (this.selectedSceneIdx ?? 1) - 1);
         }
+      } else if (this.prefs.outputType === '3d') {
+        throw new Error('3D output UI is wired, but generate3d() is not implemented yet.');
       } else {
         for (let v = 0; v < this.prefs.variations; v++) {
           this.setStatus('info', this.prefs.variations > 1
@@ -876,6 +947,7 @@ class ArtsEngine {
           await this.generateText(scene, (this.selectedSceneIdx ?? 1) - 1);
         }
       }
+
       this.setStatus('success', 'Generation complete!');
       document.getElementById('saveGithubBtn')?.classList.add('show');
     } catch (err) {
